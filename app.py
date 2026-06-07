@@ -2,32 +2,44 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-st.set_page_config(page_title="Car MSRP Predictor", page_icon="🚗")
+# Page Config
+st.set_page_config(
+    page_title="Car MSRP Prediction",
+    page_icon="🚗",
+    layout="wide"
+)
 
+# Load Model
+@st.cache_resource
+def load_model():
+    return joblib.load("model.pkl")
+
+model = load_model()
+
+# Title
 st.title("🚗 Car MSRP Prediction App")
+st.markdown("Predict the Manufacturer's Suggested Retail Price (MSRP) of a car.")
 
-# Load model
-model = joblib.load("C:\Car_price\model.pkl")
-# Replace with your best model file
+# Sidebar Inputs
+st.sidebar.header("Enter Vehicle Details")
 
-st.sidebar.header("Input Features")
+year = st.sidebar.number_input("Year", min_value=1990, max_value=2035, value=2020)
+engine_hp = st.sidebar.number_input("Engine HP", min_value=50, max_value=2000, value=300)
+engine_cylinders = st.sidebar.number_input("Engine Cylinders", min_value=2, max_value=16, value=4)
+highway_mpg = st.sidebar.number_input("Highway MPG", min_value=5, max_value=100, value=30)
+city_mpg = st.sidebar.number_input("City MPG", min_value=5, max_value=100, value=22)
+popularity = st.sidebar.number_input("Popularity", min_value=0, max_value=10000, value=1000)
 
-year = st.sidebar.number_input("Year", 1990, 2035, 2020)
-engine_hp = st.sidebar.number_input("Engine HP", 50, 2000, 300)
-engine_cylinders = st.sidebar.number_input("Engine Cylinders", 2, 16, 4)
-highway_mpg = st.sidebar.number_input("Highway MPG", 5, 100, 30)
-city_mpg = st.sidebar.number_input("City MPG", 5, 100, 22)
-popularity = st.sidebar.number_input("Popularity", 0, 10000, 1000)
+make = st.sidebar.text_input("Make", "Toyota")
+fuel_type = st.sidebar.text_input("Engine Fuel Type", "Regular Unleaded")
+transmission = st.sidebar.text_input("Transmission Type", "AUTOMATIC")
+driven_wheels = st.sidebar.text_input("Driven Wheels", "front wheel drive")
+vehicle_size = st.sidebar.text_input("Vehicle Size", "Midsize")
+vehicle_style = st.sidebar.text_input("Vehicle Style", "Sedan")
+market_category = st.sidebar.text_input("Market Category", "Crossover")
 
-make = st.sidebar.text_input("Make")
-fuel_type = st.sidebar.text_input("Engine Fuel Type")
-transmission = st.sidebar.text_input("Transmission Type")
-driven_wheels = st.sidebar.text_input("Driven Wheels")
-vehicle_size = st.sidebar.text_input("Vehicle Size")
-vehicle_style = st.sidebar.text_input("Vehicle Style")
-market_category = st.sidebar.text_input("Market Category")
-
-input_df = pd.DataFrame({
+# Input Data
+input_data = pd.DataFrame({
     "Year": [year],
     "Engine HP": [engine_hp],
     "Engine Cylinders": [engine_cylinders],
@@ -43,13 +55,16 @@ input_df = pd.DataFrame({
     "Market Category": [market_category]
 })
 
-if st.button("Predict MSRP"):
+# Prediction
+if st.button("Predict MSRP", use_container_width=True):
     try:
-        prediction = model.predict(input_df)[0]
+        prediction = model.predict(input_data)[0]
 
         st.success(
-            f"Predicted MSRP: ${prediction:,.2f}"
+            f"💰 Predicted MSRP: ${prediction:,.2f}"
         )
+
+        st.dataframe(input_data)
 
     except Exception as e:
         st.error(f"Prediction Error: {e}")
