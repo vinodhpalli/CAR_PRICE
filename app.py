@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Page Config
+# Page Configuration
 st.set_page_config(
-    page_title="Car MSRP Prediction",
+    page_title="Car MSRP Predictor",
     page_icon="🚗",
     layout="wide"
 )
@@ -16,29 +16,28 @@ def load_model():
 
 model = load_model()
 
-# Title
 st.title("🚗 Car MSRP Prediction App")
-st.markdown("Predict the Manufacturer's Suggested Retail Price (MSRP) of a car.")
+st.write("Predict the Manufacturer's Suggested Retail Price (MSRP)")
 
 # Sidebar Inputs
 st.sidebar.header("Enter Vehicle Details")
 
-year = st.sidebar.number_input("Year", min_value=1990, max_value=2035, value=2020)
-engine_hp = st.sidebar.number_input("Engine HP", min_value=50, max_value=2000, value=300)
-engine_cylinders = st.sidebar.number_input("Engine Cylinders", min_value=2, max_value=16, value=4)
-highway_mpg = st.sidebar.number_input("Highway MPG", min_value=5, max_value=100, value=30)
-city_mpg = st.sidebar.number_input("City MPG", min_value=5, max_value=100, value=22)
-popularity = st.sidebar.number_input("Popularity", min_value=0, max_value=10000, value=1000)
+year = st.sidebar.number_input("Year", 1990, 2035, 2020)
+engine_hp = st.sidebar.number_input("Engine HP", 50, 2000, 300)
+engine_cylinders = st.sidebar.number_input("Engine Cylinders", 2, 16, 4)
+highway_mpg = st.sidebar.number_input("Highway MPG", 5, 100, 30)
+city_mpg = st.sidebar.number_input("City MPG", 5, 100, 22)
+popularity = st.sidebar.number_input("Popularity", 0, 10000, 1000)
 
 make = st.sidebar.text_input("Make", "Toyota")
-fuel_type = st.sidebar.text_input("Engine Fuel Type", "Regular Unleaded")
+fuel_type = st.sidebar.text_input("Engine Fuel Type", "regular unleaded")
 transmission = st.sidebar.text_input("Transmission Type", "AUTOMATIC")
 driven_wheels = st.sidebar.text_input("Driven Wheels", "front wheel drive")
 vehicle_size = st.sidebar.text_input("Vehicle Size", "Midsize")
 vehicle_style = st.sidebar.text_input("Vehicle Style", "Sedan")
 market_category = st.sidebar.text_input("Market Category", "Crossover")
 
-# Input Data
+# Create Input DataFrame
 input_data = pd.DataFrame({
     "Year": [year],
     "Engine HP": [engine_hp],
@@ -55,15 +54,52 @@ input_data = pd.DataFrame({
     "Market Category": [market_category]
 })
 
-# Prediction
-if st.button("Predict MSRP", use_container_width=True):
+if st.button("Predict MSRP"):
+
     try:
-        prediction = model.predict(input_data)[0]
+        # Load original dataset used during training
+        train_df = pd.read_csv("car_MSRP.csv")
+
+        target_col = "MSRP (Manufacturer's suggested retail Price)"
+
+        # Same preprocessing as training
+        train_df = train_df.drop_duplicates()
+        train_df = train_df.dropna(subset=[target_col])
+
+        train_df = train_df.drop(columns=["Model"], errors="ignore")
+
+        num_cols = train_df.select_dtypes(include=["number"]).columns.drop(target_col)
+        train_df[num_cols] = train_df[num_cols].fillna(train_df[num_cols].median())
+
+        cat_cols = train_df.select_dtypes(include=["object"]).columns
+        train_df[cat_cols] = train_df[cat_cols].fillna("Unknown")
+
+        train_df = pd.get_dummies(
+            train_df,
+            columns=cat_cols,
+            drop_first=True
+        )
+
+        # Training columns
+        training_columns = train_df.drop(columns=[target_col]).columns
+
+        # Encode user input
+        input_encoded = pd.get_dummies(input_data)
+
+        # Match training columns exactly
+        input_encoded = input_encoded.reindex(
+            columns=training_columns,
+            fill_value=0
+        )
+
+        # Prediction
+        prediction = model.predict(input_encoded)[0]
 
         st.success(
             f"💰 Predicted MSRP: ${prediction:,.2f}"
         )
 
+        st.subheader("Input Summary")
         st.dataframe(input_data)
 
     except Exception as e:
