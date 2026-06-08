@@ -96,7 +96,7 @@ if st.button("Predict MSRP"):
         prediction = model.predict(input_encoded)[0]
 
         st.success(
-            f"💰 Predicted MSRP: ${prediction:,.2f}"
+            f"💰 Predicted MSRP: {prediction:,.2f}"
         )
 
         st.subheader("Input Summary")
